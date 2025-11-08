@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { ArrowRightLeft, Copy, Check } from 'lucide-react'
 import gsap from 'gsap'
 
@@ -14,6 +13,9 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
     const [copied, setCopied] = useState(false)
     const inputRef = React.useRef(null)
     const outputRef = React.useRef(null)
+    const buttonRef = React.useRef(null)
+    const isAnimatingRef = React.useRef(false)
+    const currentRotationRef = React.useRef(0)
 
     const isValidIPv4 = (ip) => {
         const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/
@@ -54,9 +56,26 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
         }
     }, [input, isIPv4ToIPv6])
 
-    const handleSwitchChange = (checked) => {
-        setIsIPv4ToIPv6(checked)
-        cambiarIp(checked)
+    const handleSwitchChange = () => {
+        if (isAnimatingRef.current) return
+
+        isAnimatingRef.current = true
+        const newState = !isIPv4ToIPv6
+        setIsIPv4ToIPv6(newState)
+        cambiarIp(newState)
+        if (buttonRef.current) {
+            const targetRotation = currentRotationRef.current + 360
+            gsap.to(buttonRef.current, {
+                rotation: targetRotation,
+                duration: 0.5,
+                ease: 'power2.inOut',
+                onComplete: () => {
+                    currentRotationRef.current = 0
+                    gsap.set(buttonRef.current, { rotation: 0 })
+                    isAnimatingRef.current = false
+                }
+            })
+        }
 
         if (inputRef.current) {
             gsap.fromTo(
@@ -90,15 +109,15 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
                     </span>
                 </div>
 
-                {/* Switch */}
-                <div className="flex items-center gap-3 bg-muted/50 p-3 rounded-lg border border-muted-foreground/20 backdrop-blur-sm">
-                    <Switch
-                        checked={isIPv4ToIPv6}
-                        onCheckedChange={handleSwitchChange}
-                        className="scale-125"
-                    />
-                    <ArrowRightLeft className="w-4 h-4 text-muted-foreground" />
-                </div>
+                {/* Botón con rotación */}
+                <button
+                    ref={buttonRef}
+                    onClick={handleSwitchChange}
+                    className="flex items-center justify-center gap-3 bg-muted/50 p-3 rounded-lg border border-muted-foreground/20 hover:border-primary/40 hover:bg-primary/10 transition-colors backdrop-blur-sm"
+                    title="Intercambiar direcciones"
+                >
+                    <ArrowRightLeft className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />
+                </button>
 
                 <div className="flex-1 text-right">
                     <label className="text-sm font-medium text-muted-foreground mb-2 block">
