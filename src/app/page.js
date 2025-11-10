@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import { ModeToggle } from "@/components/theme-toogle"
 import IPv4IPv6Converter from "@/components/IPv4IPv6Converter"
 import IPv4IPv6Badge3D from "@/components/IPv4IPv63D"
+import DockNav from "@/components/DockNav"
 import gsap from "gsap"
 import Prism from "@/components/Prism"
 
@@ -45,12 +46,16 @@ export default function Home() {
         />
       </div>
 
+      {/* Dock Navigation */}
+      <DockNav />
+
+      {/* Botón de tema */}
+      <div className="fixed top-6 right-6 z-50">
+        <ModeToggle />
+      </div>
+
       {/* Contenedor principal */}
       <div ref={containerRef} className="relative z-10 w-full h-screen overflow-hidden flex flex-col">
-
-        <div className="absolute top-6 right-6 z-20" data-animate>
-          <ModeToggle />
-        </div>
 
         <div className="flex flex-1 items-center justify-between px-8 md:px-16 gap-12">
 
