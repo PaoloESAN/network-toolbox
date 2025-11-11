@@ -1,5 +1,6 @@
 "use client"
 
+import Link from 'next/link'
 import React, { useState, useRef } from 'react'
 
 export default function DockNav() {
@@ -49,7 +50,9 @@ export default function DockNav() {
                         className="group flex items-center justify-center gap-2 px-6 py-3 rounded-xl hover:bg-primary/15 transition-all duration-200"
                     >
                         <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                            Convertidor de IPs
+                            <Link href="/">
+                                Convertidor de IPs
+                            </Link>
                         </div>
                     </button>
 
@@ -61,7 +64,9 @@ export default function DockNav() {
                         className="group flex items-center justify-center gap-2 px-6 py-3 rounded-xl hover:bg-primary/15 transition-all duration-200"
                     >
                         <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                            Máscaras de IP
+                            <Link href="/mascaras-ip">
+                                Máscaras de IP
+                            </Link>
                         </div>
                     </button>
                 </div>

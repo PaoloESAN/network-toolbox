@@ -111,43 +111,52 @@ export default function IPv4IPv6Badge3D({ isIPv4 = true }) {
     useEffect(() => {
         if (!containerRef.current) return
 
+        while (containerRef.current.firstChild) {
+            containerRef.current.removeChild(containerRef.current.firstChild)
+        }
+
         const scene = new THREE.Scene()
         sceneRef.current = scene
         scene.background = null
-        scene.fog = new THREE.Fog(0x0f172a, 100, 500)
 
-        const width = containerRef.current.clientWidth
-        const height = containerRef.current.clientHeight
+        const width = containerRef.current.clientWidth || 800
+        const height = containerRef.current.clientHeight || 600
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
         camera.position.set(0, 0, 4)
         camera.lookAt(0, 0, 0)
         cameraRef.current = camera
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true,
+            powerPreference: 'high-performance'
+        })
         renderer.setSize(width, height)
-        renderer.setPixelRatio(window.devicePixelRatio)
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
         renderer.setClearColor(0x000000, 0)
+        renderer.outputColorSpace = THREE.SRGBColorSpace
         rendererRef.current = renderer
         containerRef.current.appendChild(renderer.domElement)
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2)
         scene.add(ambientLight)
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 2)
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5)
         directionalLight.position.set(10, 10, 10)
-        directionalLight.castShadow = true
         scene.add(directionalLight)
 
-        const pointLight1 = new THREE.PointLight(0x3b82f6, 3)
+        const pointLight1 = new THREE.PointLight(0x3b82f6, 2.5)
         pointLight1.position.set(5, 5, 5)
         scene.add(pointLight1)
 
-        const pointLight2 = new THREE.PointLight(0xa855f7, 2)
+        const pointLight2 = new THREE.PointLight(0xa855f7, 1.5)
         pointLight2.position.set(-5, -5, 5)
         scene.add(pointLight2)
 
         const initialModelPath = isIPv4 ? '/models/ipv4.glb' : '/models/ipv6.glb'
+
         loadModel(initialModelPath, (model) => {
+            console.log('Modelo cargado exitosamente')
             scene.add(model)
             modelRef.current = model
             currentModelTypeRef.current = isIPv4 ? 'ipv4' : 'ipv6'
@@ -201,20 +210,25 @@ export default function IPv4IPv6Badge3D({ isIPv4 = true }) {
         animate()
 
         const handleResize = () => {
-            const newWidth = containerRef.current?.clientWidth || width
-            const newHeight = containerRef.current?.clientHeight || height
-            camera.aspect = newWidth / newHeight
-            camera.updateProjectionMatrix()
-            renderer.setSize(newWidth, newHeight)
+            if (!containerRef.current || !rendererRef.current || !cameraRef.current) return
+            const newWidth = containerRef.current.clientWidth || 800
+            const newHeight = containerRef.current.clientHeight || 600
+            cameraRef.current.aspect = newWidth / newHeight
+            cameraRef.current.updateProjectionMatrix()
+            rendererRef.current.setSize(newWidth, newHeight)
         }
         window.addEventListener('resize', handleResize)
 
         return () => {
             window.removeEventListener('resize', handleResize)
-            containerRef.current?.removeEventListener('mousedown', onMouseDown)
-            containerRef.current?.removeEventListener('mousemove', onMouseMove)
-            containerRef.current?.removeEventListener('mouseup', onMouseUp)
-            containerRef.current?.removeEventListener('mouseleave', onMouseUp)
+
+            if (containerRef.current) {
+                containerRef.current.removeEventListener('mousedown', onMouseDown)
+                containerRef.current.removeEventListener('mousemove', onMouseMove)
+                containerRef.current.removeEventListener('mouseup', onMouseUp)
+                containerRef.current.removeEventListener('mouseleave', onMouseUp)
+            }
+
             cancelAnimationFrame(animationId)
 
             if (timelineRef.current) {
@@ -224,10 +238,12 @@ export default function IPv4IPv6Badge3D({ isIPv4 = true }) {
             cleanupModel(modelRef.current)
             cleanupModel(loadingModelRef.current)
 
-            if (containerRef.current && renderer.domElement.parentNode === containerRef.current) {
-                containerRef.current.removeChild(renderer.domElement)
+            if (rendererRef.current) {
+                rendererRef.current.dispose()
+                if (containerRef.current && rendererRef.current.domElement?.parentNode === containerRef.current) {
+                    containerRef.current.removeChild(rendererRef.current.domElement)
+                }
             }
-            renderer.dispose()
         }
     }, [])
 
