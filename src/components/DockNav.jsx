@@ -1,11 +1,13 @@
 "use client"
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import React, { useState, useRef } from 'react'
 
 export default function DockNav() {
     const [isHovered, setIsHovered] = useState(false)
     const timeoutRef = useRef(null)
+    const router = useRouter()
 
     const handleMouseEnter = () => {
         if (timeoutRef.current) {
@@ -47,12 +49,11 @@ export default function DockNav() {
                 <div className="flex items-center gap-1 px-2 py-2">
                     {/* Convertidor de IPs */}
                     <button
-                        className="group flex items-center justify-center gap-2 px-6 py-3 rounded-xl hover:bg-primary/15 transition-all duration-200"
+                        onClick={() => router.push('/')}
+                        className="group flex items-center justify-center gap-2 px-6 py-3 rounded-xl hover:bg-primary/15 transition-all duration-200 cursor-pointer w-full"
                     >
-                        <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                            <Link href="/">
-                                Convertidor de IPs
-                            </Link>
+                        <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors w-full whitespace-nowrap">
+                            Convertidor de IPs
                         </div>
                     </button>
 
@@ -61,12 +62,11 @@ export default function DockNav() {
 
                     {/* Máscaras de IP */}
                     <button
-                        className="group flex items-center justify-center gap-2 px-6 py-3 rounded-xl hover:bg-primary/15 transition-all duration-200"
+                        onClick={() => router.push('/mascaras-ip')}
+                        className="group flex items-center justify-center gap-2 px-6 py-3 rounded-xl hover:bg-primary/15 transition-all duration-200 cursor-pointer w-full"
                     >
                         <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                            <Link href="/mascaras-ip">
-                                Máscaras de IP
-                            </Link>
+                            Máscaras de IP
                         </div>
                     </button>
                 </div>

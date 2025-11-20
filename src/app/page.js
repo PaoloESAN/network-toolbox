@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { ModeToggle } from "@/components/theme-toogle"
 import IPv4IPv6Converter from "@/components/IPv4IPv6Converter"
-import IPv4IPv6Badge3D from "@/components/IPv4IPv63D"
+import Logos3D from "@/components/logos3D"
 import DockNav from "@/components/DockNav"
 import gsap from "gsap"
 import Prism from "@/components/Prism"
@@ -13,20 +13,25 @@ export default function Home() {
   const containerRef = React.useRef(null)
 
   React.useEffect(() => {
-    if (containerRef.current) {
-      const elements = containerRef.current.querySelectorAll('[data-animate]')
-      gsap.fromTo(
-        elements,
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          stagger: 0.2,
-          ease: 'power2.out',
-        }
-      )
-    }
+    // Pequeño delay para asegurar que el DOM esté completamente renderizado
+    const timer = setTimeout(() => {
+      if (containerRef.current) {
+        const elements = containerRef.current.querySelectorAll('[data-animate]')
+        gsap.fromTo(
+          elements,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            stagger: 0.2,
+            ease: 'power2.out',
+          }
+        )
+      }
+    }, 100)
+
+    return () => clearTimeout(timer)
   }, [])
 
   return (
@@ -104,7 +109,7 @@ export default function Home() {
               <div className="relative z-10 w-full h-full">
                 <div className="relative w-full h-full flex items-center justify-center overflow-hidden group">
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-10 -skew-x-12 translate-x-full group-hover:translate-x-0 transition-all duration-1000" />
-                  <IPv4IPv6Badge3D isIPv4={isIPv4} />
+                  <Logos3D key="logos3d-home" isIPv4={isIPv4} />
 
                 </div>
               </div>
