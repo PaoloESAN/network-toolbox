@@ -1,3 +1,66 @@
+import sys
+
+def ip_a_int(ip_str):
+    """Convierte una IP de string a número entero"""
+    octetos = ip_str.split('.')
+    
+    # Validar que cada octeto esté entre 0 y 255
+    for octeto in octetos:
+        valor = int(octeto)
+        if valor < 0 or valor > 255:
+            return None
+    
+    numero = 0
+    numero = numero + int(octetos[0]) * 256**3
+    numero = numero + int(octetos[1]) * 256**2
+    numero = numero + int(octetos[2]) * 256
+    numero = numero + int(octetos[3])
+    return numero
+
+
+def int_a_ip(numero):
+    """Convierte un número entero a IP"""
+    octeto1 = numero // (256**3)
+    resto = numero % (256**3)
+    
+    octeto2 = resto // (256**2)
+    resto = resto % (256**2)
+    
+    octeto3 = resto // 256
+    octeto4 = resto % 256
+    
+    return f"{octeto1}.{octeto2}.{octeto3}.{octeto4}"
+
+
+def int_a_binario(numero):
+    """Convierte un número entero a formato binario con puntos cada 8 bits"""
+    # Convertir a binario y llenar con ceros hasta 32 dígitos
+    binario = bin(numero)[2:].zfill(32)
+    
+    # Dividir en 4 grupos de 8 bits
+    grupo1 = binario[0:8]
+    grupo2 = binario[8:16]
+    grupo3 = binario[16:24]
+    grupo4 = binario[24:32]
+    
+    return f"{grupo1}.{grupo2}.{grupo3}.{grupo4}"
+
+
+def calcular_mascara(netmask):
+    """Calcula la máscara de red en formato entero"""
+    # Crear máscara con netmask bits en 1 y el resto en 0
+    # Ejemplo: /24 = 11111111.11111111.11111111.00000000
+    
+    # Cálculo simple:
+    # (2^netmask - 1) nos da netmask bits en 1
+    # Luego multiplicamos por 2^(32-netmask) para desplazarlos a la izquierda
+    bits_red = 2**netmask - 1
+    bits_host = 32 - netmask
+    mascara = bits_red * (2**bits_host)
+    
+    return mascara
+
+
 def calcular_subred(ip, netmask):
     """
     Calcula toda la información de una subred IPv4
@@ -11,40 +74,38 @@ def calcular_subred(ip, netmask):
     """
     
     # Convertir IP a entero
-    def ip_a_int(ip_str):
-        octetos = ip_str.split('.')
-        return (int(octetos[0]) << 24) + (int(octetos[1]) << 16) + \
-               (int(octetos[2]) << 8) + int(octetos[3])
+    ip_int = ip_a_int(ip)
     
-    # Convertir entero a IP
-    def int_a_ip(num):
-        return f"{(num >> 24) & 0xFF}.{(num >> 16) & 0xFF}.{(num >> 8) & 0xFF}.{num & 0xFF}"
-    
-    # Convertir entero a binario de 32 bits con puntos cada 8 bits
-    def int_a_binario(num):
-        binario = format(num, '032b')
-        return f"{binario[0:8]}.{binario[8:16]}.{binario[16:24]}.{binario[24:32]}"
+    # Validar IP
+    if ip_int is None:
+        return None
     
     # Calcular máscara de red
-    mascara_int = (0xFFFFFFFF << (32 - netmask)) & 0xFFFFFFFF
-    mascara_wildcard_int = ~mascara_int & 0xFFFFFFFF
+    mascara_int = calcular_mascara(netmask)
     
-    # Calcular IP de red (address AND mask)
-    ip_int = ip_a_int(ip)
+    # Wildcard es lo opuesto de la máscara
+    wildcard_int = (2**32 - 1) - mascara_int
+    
+    # Calcular IP de red (hacer AND entre IP y máscara)
+    # Esto elimina los bits de host
     network_int = ip_int & mascara_int
     
     # Calcular broadcast (network OR wildcard)
-    broadcast_int = network_int | mascara_wildcard_int
+    broadcast_int = network_int | wildcard_int
     
     # Calcular primer y último host
     hostmin_int = network_int + 1
     hostmax_int = broadcast_int - 1
     
-    # Calcular cantidad de hosts (2^(32-netmask) - 2)
-    total_hosts = (2 ** (32 - netmask)) - 2
+    # Calcular cantidad de hosts (2^bits_host - 2)
+    bits_host = 32 - netmask
+    total_hosts = (2 ** bits_host) - 2
+    
+    # Obtener primer octeto para determinar clase
+    octetos_network = int_a_ip(network_int).split('.')
+    primer_octeto = int(octetos_network[0])
     
     # Determinar clase de red
-    primer_octeto = (network_int >> 24) & 0xFF
     if primer_octeto < 128:
         clase = "Class A"
     elif primer_octeto < 192:
@@ -57,13 +118,21 @@ def calcular_subred(ip, netmask):
         clase = "Class E, Reserved"
     
     # Determinar si es privada
+    octeto2_network = int(octetos_network[1])
+    
     es_privada = False
-    if (primer_octeto == 10) or \
-       (primer_octeto == 172 and 16 <= ((network_int >> 16) & 0xFF) <= 31) or \
-       (primer_octeto == 192 and ((network_int >> 16) & 0xFF) == 168):
+    if primer_octeto == 10:
+        es_privada = True
+    elif primer_octeto == 172 and 16 <= octeto2_network <= 31:
+        es_privada = True
+    elif primer_octeto == 192 and octeto2_network == 168:
         es_privada = True
     
-    tipo_red = "Private Internet" if es_privada else "Public Internet"
+    # Determinar si es red privada o pública
+    if es_privada:
+        tipo_red = "Private Internet"
+    else:
+        tipo_red = "Public Internet"
     
     # Construir resultado
     resultado = {
@@ -76,8 +145,8 @@ def calcular_subred(ip, netmask):
             "binario": int_a_binario(mascara_int)
         },
         "Wildcard": {
-            "decimal": int_a_ip(mascara_wildcard_int),
-            "binario": int_a_binario(mascara_wildcard_int)
+            "decimal": int_a_ip(wildcard_int),
+            "binario": int_a_binario(wildcard_int)
         },
         "Network": {
             "decimal": f"{int_a_ip(network_int)}/{netmask}",
@@ -113,6 +182,10 @@ def imprimir_subred(ip, netmask):
     """
     info = calcular_subred(ip, netmask)
     
+    if info is None:
+        print("Error: IP inválida")
+        return
+    
     print(f"Address:    {info['Address']['decimal']:<20} {info['Address']['binario']}")
     print(f"Netmask:    {info['Netmask']['decimal']:<20} {info['Netmask']['binario']}")
     print(f"Wildcard:   {info['Wildcard']['decimal']:<20} {info['Wildcard']['binario']}")
@@ -124,23 +197,27 @@ def imprimir_subred(ip, netmask):
     print(f"Hosts/Net:  {info['Hosts/Net']:<20} {info['Clase']}, {info['Tipo']}")
 
 
-# Ejemplo de uso
 if __name__ == "__main__":
-    # Ejemplo 1: igual que la imagen
-    print("=== Ejemplo 1: 192.168.0.1/24 ===")
-    imprimir_subred("192.168.0.1", 24)
+    # Recibir argumentos: python mascaras-ips.py <ip> <netmask>
+    # Ejemplo: python mascaras-ips.py 192.168.0.1 24
     
-    print("\n=== Ejemplo 2: 10.0.0.5/8 ===")
-    imprimir_subred("10.0.0.5", 8)
+    if len(sys.argv) < 3:
+        print("Error: Uso: python mascaras-ips.py <ip> <netmask>")
+        print("Ejemplo: python mascaras-ips.py 192.168.0.1 24")
+        sys.exit(1)
     
-    print("\n=== Ejemplo 3: 172.16.50.100/16 ===")
-    imprimir_subred("172.16.50.100", 16)
+    ip = sys.argv[1]
+    netmask = int(sys.argv[2])
     
-    # También puedes usar la función y obtener el diccionario
-    print("\n=== Usando la función directamente ===")
-    info = calcular_subred("192.168.1.50", 26)
-    print(f"Network: {info['Network']['decimal']}")
-    print(f"HostMin: {info['HostMin']['decimal']}")
-    print(f"HostMax: {info['HostMax']['decimal']}")
-    print(f"Broadcast: {info['Broadcast']['decimal']}")
-    print(f"Total Hosts: {info['Hosts/Net']}")
+    # Validar que la IP tenga 4 octetos
+    octetos = ip.split('.')
+    if len(octetos) != 4:
+        print("Error: La IP debe tener 4 números (ej: 192.168.0.1)")
+        sys.exit(1)
+    
+    # Validar que la máscara esté entre 0 y 32
+    if netmask < 0 or netmask > 32:
+        print("Error: La máscara debe estar entre 0 y 32")
+        sys.exit(1)
+    
+    imprimir_subred(ip, netmask)

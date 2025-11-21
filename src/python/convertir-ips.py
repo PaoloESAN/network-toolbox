@@ -1,119 +1,88 @@
-# Funciones simples para convertir entre IPv4 e IPv6
+import sys
 
 def ipv4_a_ipv6(ipv4):
-    """
-    Convierte una dirección IPv4 a IPv6 (formato comprimido)
-    Ejemplo: 192.168.1.1 -> ::c0a8:0101
-    """
-    # Validar que sea un IPv4 válido
     partes = ipv4.split('.')
+    
     if len(partes) != 4:
-        return "Error: IPv4 inválido"
+        return "Error: IPv4 debe tener 4 números"
     
     try:
-        # Verificar que cada parte sea un número entre 0 y 255
-        octetos = []
-        for parte in partes:
-            num = int(parte)
+        octetos = [int(p) for p in partes]
+        for num in octetos:
             if num < 0 or num > 255:
-                return "Error: Números fuera de rango (0-255)"
-            octetos.append(num)
+                return "Error: Cada número debe estar entre 0 y 255"
     except ValueError:
-        return "Error: IPv4 contiene valores no numéricos"
+        return "Error: Los valores deben ser números"
     
-    # Convertir a IPv6: combinar pares de octetos IPv4 en hexadecimal
-    # IPv6 tiene 8 grupos de 16 bits (4 dígitos hex cada uno)
-    grupo1 = f"{octetos[0]:02x}{octetos[1]:02x}"
-    grupo2 = f"{octetos[2]:02x}{octetos[3]:02x}"
-    
-    # Formar IPv6 en formato comprimido
-    # Los primeros 6 grupos son 0, así que usamos ::
-    ipv6 = f"::{grupo1}:{grupo2}"
-    return ipv6
+    grupo1 = f"{octetos[0]:02x}{octetos[1]:02x}" #02x es para formato hexadecimal con dos dígitos
+    grupo2 = f"{octetos[2]:02x}{octetos[3]:02x}" #02x es para formato hexadecimal con dos dígitos
+
+    return f"::ffff:{grupo1}:{grupo2}"
 
 
 def ipv6_a_ipv4(ipv6):
-    """
-    Convierte una dirección IPv6 a IPv4
-    Maneja notación comprimida (::) y ceros iniciales omitidos
-    Ejemplo: ::c0a8:0101 -> 192.168.1.1
-    """
-    # Expandir la notación comprimida ::
+    """Convierte IPv6 a IPv4 - Ejemplo: ::ffff:c0a8:0101 -> 192.168.1.1"""
+    # Expandir la notación comprimida (::)
     if '::' in ipv6:
-        # Contar cuántos grupos hay
+        # Dividir en dos partes usando ::
         partes = ipv6.split('::')
+        parte_izquierda = partes[0]
+        parte_derecha = partes[1]
         
-        if len(partes) > 2:
-            return "Error: No puede haber más de un ::"
+        # Convertir strings en listas de grupos
+        if parte_izquierda:
+            grupos_izq = parte_izquierda.split(':')
+        else:
+            grupos_izq = []
         
-        # Expandir los grupos
-        grupos_izq = partes[0].split(':') if partes[0] else []
-        grupos_der = partes[1].split(':') if partes[1] else []
+        if parte_derecha:
+            grupos_der = parte_derecha.split(':')
+        else:
+            grupos_der = []
         
-        # Filtrar strings vacíos
-        grupos_izq = [g for g in grupos_izq if g]
-        grupos_der = [g for g in grupos_der if g]
-        
-        # Llenar con ceros el medio
+        # Rellenar con ceros en el medio
         ceros_faltantes = 8 - len(grupos_izq) - len(grupos_der)
         grupos = grupos_izq + ['0'] * ceros_faltantes + grupos_der
     else:
         # Si no hay ::, dividir normalmente
         grupos = ipv6.split(':')
-        
-        # Si tiene ceros iniciales omitidos, agregarlos
-        grupos = [g if g else '0' for g in grupos]
     
-    # Validar que tenga exactamente 8 grupos
+    # Validar que tenga 8 grupos
     if len(grupos) != 8:
-        return "Error: IPv6 debe expandirse a 8 grupos"
+        return "Error: IPv6 inválido"
     
     try:
-        # Obtener los últimos dos grupos (que contienen el IPv4)
-        penultimo = grupos[6]
-        ultimo = grupos[7]
+        # Tomar los dos últimos grupos (contienen el IPv4 en hexadecimal)
+        hex_grupo_6 = grupos[6]  # Ejemplo: "c0a8"
+        hex_grupo_7 = grupos[7]  # Ejemplo: "0101"
         
-        # Convertir de hexadecimal a decimal
-        # Cada grupo tiene 2 octetos (4 dígitos hex)
-        octeto1 = int(penultimo[:2], 16) if len(penultimo) >= 2 else 0
-        octeto2 = int(penultimo[2:4], 16) if len(penultimo) >= 4 else int(penultimo[2:], 16) if len(penultimo) > 2 else 0
-        octeto3 = int(ultimo[:2], 16) if len(ultimo) >= 2 else 0
-        octeto4 = int(ultimo[2:4], 16) if len(ultimo) >= 4 else int(ultimo[2:], 16) if len(ultimo) > 2 else 0
+        # Convertir hexadecimal a decimal
+        # Cada grupo tiene 4 dígitos hex = 2 octetos
+        octeto1 = int(hex_grupo_6[:2], 16)    # c0 = 192
+        octeto2 = int(hex_grupo_6[2:], 16)    # a8 = 168
+        octeto3 = int(hex_grupo_7[:2], 16)    # 01 = 1
+        octeto4 = int(hex_grupo_7[2:], 16)    # 01 = 1
         
-        # Validar que estén en rango 0-255
-        for octeto in [octeto1, octeto2, octeto3, octeto4]:
-            if octeto < 0 or octeto > 255:
-                return "Error: Valores fuera de rango"
-    except ValueError:
-        return "Error: Valores hexadecimales inválidos en IPv6"
-    
-    # Formar el IPv4
-    ipv4 = f"{octeto1}.{octeto2}.{octeto3}.{octeto4}"
-    return ipv4
+        return f"{octeto1}.{octeto2}.{octeto3}.{octeto4}"
+    except (ValueError, IndexError):
+        return "Error: IPv6 con valores hexadecimales inválidos"
 
 
-# Ejemplo de uso
 if __name__ == "__main__":
-    # Prueba 1: IPv4 a IPv6 comprimido
-    ipv4_original = "192.168.1.1"
-    print(f"IPv4 original: {ipv4_original}")
     
-    ipv6_convertido = ipv4_a_ipv6(ipv4_original)
-    print(f"IPv6 convertido: {ipv6_convertido}")
+    if len(sys.argv) != 3:
+        print("Error: Uso: python convertir-ips.py <ip> <direction>")
+        sys.exit(1)
     
-    ipv4_reconvertido = ipv6_a_ipv4(ipv6_convertido)
-    print(f"IPv4 reconvertido: {ipv4_reconvertido}")
+    ip = sys.argv[1]
+    direction = sys.argv[2]
     
-    # Prueba 2: IPv6 comprimido a IPv4
-    print("\n--- Prueba con notación comprimida ---")
-    ipv6_test = "::0a00:0001"
-    print(f"IPv6 original: {ipv6_test}")
-    ipv4_test = ipv6_a_ipv4(ipv6_test)
-    print(f"IPv4 convertido: {ipv4_test}")
+    if direction == "ipv4_to_ipv6":
+        resultado = ipv4_a_ipv6(ip)
+    elif direction == "ipv6_to_ipv4":
+        resultado = ipv6_a_ipv4(ip)
+    else:
+        print("Error: direction debe ser 'ipv4_to_ipv6' o 'ipv6_to_ipv4'")
+        sys.exit(1)
     
-    # Prueba 3: IPv6 expandido a IPv4
-    print("\n--- Prueba con notación expandida ---")
-    ipv6_expandido = "0:0:0:0:0:0:c0a8:0101"
-    print(f"IPv6 original: {ipv6_expandido}")
-    ipv4_from_expandido = ipv6_a_ipv4(ipv6_expandido)
-    print(f"IPv4 convertido: {ipv4_from_expandido}")
+    print(resultado)

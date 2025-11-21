@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { ArrowRightLeft, Copy, Check } from 'lucide-react'
 import gsap from 'gsap'
 
@@ -48,13 +49,20 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
             setOutput('')
             return
         }
+    }, [])
+
+    const handleConvert = () => {
+        if (input.trim() === '') {
+            setOutput('')
+            return
+        }
 
         if (isIPv4ToIPv6) {
             setOutput(convertIPv4ToIPv6(input))
         } else {
             setOutput(convertIPv6ToIPv4(input))
         }
-    }, [input, isIPv4ToIPv6])
+    }
 
     const handleSwitchChange = () => {
         if (isAnimatingRef.current) return
@@ -150,7 +158,7 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
                         <p className="text-lg font-mono text-primary/80 break-all min-h-[1.5em] flex items-center">
                             {output || (
                                 <span className="text-muted-foreground/50 italic">
-                                    {input ? 'Convirtiendo...' : 'Ingresa una dirección IP'}
+                                    {input ? 'Ingresa una dirección IP' : 'Ingresa una dirección IP'}
                                 </span>
                             )}
                         </p>
@@ -172,11 +180,14 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
                 </div>
             </Card>
 
-            {input && !output && (
-                <div className="text-xs text-red-500/70 text-center animate-pulse">
-                    Formato de dirección IP no válido
-                </div>
-            )}
+            {/* Botón para convertir */}
+            <Button
+                onClick={handleConvert}
+                className="w-full"
+                disabled={input.trim() === ''}
+            >
+                Convertir
+            </Button>
         </div>
     )
 }

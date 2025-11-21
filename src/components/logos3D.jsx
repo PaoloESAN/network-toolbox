@@ -12,7 +12,6 @@ export default function Logos3D({ isIPv4 = true }) {
     const [isLoading, setIsLoading] = useState(true)
     const [isMounted, setIsMounted] = useState(false)
 
-    // Refs for Three.js objects
     const sceneRef = useRef(null)
     const cameraRef = useRef(null)
     const rendererRef = useRef(null)
@@ -28,7 +27,6 @@ export default function Logos3D({ isIPv4 = true }) {
     const targetRef = useRef(new THREE.Vector2())
     const windowHalfRef = useRef({ x: 0, y: 0 })
 
-    // Asegurar que solo se renderiza en el cliente
     useEffect(() => {
         setIsMounted(true)
     }, [])
@@ -169,7 +167,6 @@ export default function Logos3D({ isIPv4 = true }) {
 
         animate()
 
-        // Load Font
         const loader = new FontLoader()
         loader.load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', function (font) {
             fontRef.current = font

@@ -13,7 +13,6 @@ export default function Home() {
   const containerRef = React.useRef(null)
 
   React.useEffect(() => {
-    // Pequeño delay para asegurar que el DOM esté completamente renderizado
     const timer = setTimeout(() => {
       if (containerRef.current) {
         const elements = containerRef.current.querySelectorAll('[data-animate]')
