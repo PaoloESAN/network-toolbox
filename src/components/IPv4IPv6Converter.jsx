@@ -34,14 +34,26 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
         return ipv6Regex.test(ip)
     }
 
-    const convertIPv4ToIPv6 = (ipv4) => {
-        //logica de python
-        return 'ip'
-    }
+    const [loading, setLoading] = useState(false)
 
-    const convertIPv6ToIPv4 = (ipv6) => {
-        //logica de python
-        return 'ip'
+    const callConvertAPI = async (ip, direction) => {
+        try {
+            const res = await fetch('/api/convert-ip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ip, direction }),
+            })
+
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error || 'Error en API')
+            }
+
+            return data.result
+        } catch (err) {
+            console.error('Conversion API error:', err)
+            throw err
+        }
     }
 
     useEffect(() => {
@@ -49,18 +61,38 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
             setOutput('')
             return
         }
-    }, [])
+    }, [input])
 
-    const handleConvert = () => {
+    const handleConvert = async () => {
         if (input.trim() === '') {
             setOutput('')
             return
         }
 
-        if (isIPv4ToIPv6) {
-            setOutput(convertIPv4ToIPv6(input))
-        } else {
-            setOutput(convertIPv6ToIPv4(input))
+        if (isIPv4ToIPv6 && !isValidIPv4(input)) {
+            console.log('Invalid IPv4 format')
+            setOutput('Formato IPv4 inválido')
+            return
+        }
+
+        if (!isIPv4ToIPv6 && !isValidIPv6(input)) {
+            console.log('Invalid IPv6 format')
+            setOutput('Formato IPv6 inválido')
+            return
+        }
+
+        setLoading(true)
+        setOutput('')
+        try {
+            const direction = isIPv4ToIPv6 ? 'ipv4_to_ipv6' : 'ipv6_to_ipv4'
+            console.log('Calling API with:', input.trim(), direction)
+            const result = await callConvertAPI(input.trim(), direction)
+            setOutput(result)
+        } catch (err) {
+            console.log('Conversion error:', err)
+            setOutput('Error en conversión')
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -184,9 +216,9 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
             <Button
                 onClick={handleConvert}
                 className="w-full"
-                disabled={input.trim() === ''}
+                disabled={loading || input.trim() === ''}
             >
-                Convertir
+                {loading ? 'Convirtiendo...' : 'Convertir'}
             </Button>
         </div>
     )

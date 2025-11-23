@@ -2,18 +2,18 @@ import { spawn } from 'child_process';
 import path from 'path';
 
 export async function POST(request) {
-    const { ip, direction } = await request.json();
-    console.log('Received IP conversion request:', ip, direction);
+    const { ip, mascara } = await request.json();
+    console.log('Received mask calculation request:', ip, mascara);
 
     try {
-        const scriptPath = path.join(process.cwd(), 'convertir-ips.py');
+        const scriptPath = path.join(process.cwd(), 'mascaras-ips.py');
         console.log('Script path:', scriptPath);
 
         const result = await new Promise((resolve, reject) => {
             let output = '';
             let errorOutput = '';
 
-            const python = spawn('python', [scriptPath, ip, direction]);
+            const python = spawn('python', [scriptPath, ip, mascara.toString()]);
 
             python.stdout.on('data', (data) => {
                 console.log('Python stdout:', data.toString());

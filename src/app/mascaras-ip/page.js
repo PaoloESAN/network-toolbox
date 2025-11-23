@@ -9,24 +9,79 @@ import { Card } from "@/components/ui/card";
 import DockNav from "@/components/DockNav";
 import gsap from "gsap";
 
-const mockData = [
-    { label: "Address", value: "192.168.0.1", binario: "11000000.10101000.00000000.00000001" },
-    { label: "Netmask", value: "255.255.255.0 = /24", binario: "11111111.11111111.11111111.00000000" },
-    { label: "Wildcard", value: "0.0.0.255", binario: "00000000.00000000.00000000.11111111" },
-    { label: "Network", value: "192.168.0.0/24", binario: "11000000.10101000.00000000.00000000" },
-    { label: "HostMin", value: "192.168.0.1", binario: "11000000.10101000.00000000.00000001" },
-    { label: "HostMax", value: "192.168.0.254", binario: "11000000.10101000.00000000.11111110" },
-    { label: "Broadcast", value: "192.168.0.255", binario: "11000000.10101000.00000000.11111111" },
-    { label: "Hosts/Net", value: "254", binario: "00000000.00000000.00000000.11111110" },
-];
-
 export default function MascarasIPPage() {
     const [ip, setIp] = useState("");
     const [mascara, setMascara] = useState("");
     const [mostrarBinario, setMostrarBinario] = useState(false);
+    const [resultados, setResultados] = useState(null);
+    const [loading, setLoading] = useState(false);
     const todoRef = useRef(null);
     const cardsRef = useRef([]);
     const animatedRef = useRef(false);
+
+    const isValidIPv4 = (ip) => {
+        const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+        if (!ipv4Regex.test(ip)) return false;
+
+        const parts = ip.split('.');
+        return parts.every(part => {
+            const num = parseInt(part, 10);
+            return num >= 0 && num <= 255;
+        });
+    };
+
+    const callMascarasAPI = async (ip, mascara) => {
+        try {
+            const res = await fetch('/api/mascaras-ip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ip, mascara: parseInt(mascara) }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || 'Error en API');
+            }
+
+            return data.result;
+        } catch (err) {
+            console.error('Mascaras API error:', err);
+            throw err;
+        }
+    };
+
+    const handleCalcular = async () => {
+        if (ip.trim() === '' || mascara.trim() === '') {
+            setResultados(null);
+            return;
+        }
+
+        if (!isValidIPv4(ip)) {
+            console.log('Invalid IPv4 format');
+            setResultados(null);
+            return;
+        }
+
+        const mascaraNum = parseInt(mascara);
+        if (mascaraNum < 0 || mascaraNum > 32) {
+            console.log('Invalid netmask');
+            setResultados(null);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            console.log('Calling API with:', ip, mascara);
+            const result = await callMascarasAPI(ip.trim(), mascara);
+            const resultadosParsed = typeof result === 'string' ? JSON.parse(result) : result;
+            setResultados(resultadosParsed);
+        } catch (err) {
+            console.log('Calculation error:', err);
+            setResultados(null);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (animatedRef.current) return;
@@ -127,9 +182,11 @@ export default function MascarasIPPage() {
                                 </div>
 
                                 <Button
+                                    onClick={handleCalcular}
+                                    disabled={loading || ip.trim() === '' || mascara.trim() === ''}
                                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                                 >
-                                    Calcular
+                                    {loading ? 'Calculando...' : 'Calcular'}
                                 </Button>
                             </div>
                         </Card>
@@ -155,63 +212,190 @@ export default function MascarasIPPage() {
                     {/* Sección Derecha - Cards Grid 3x3 Centradas */}
                     <div className="flex-1 hidden lg:flex items-center justify-center h-full">
                         <div className="grid grid-cols-3 gap-4">
-                            {mockData.map((item, index) => (
-                                <div
-                                    key={index}
-                                    ref={(el) => cardsRef.current.push(el)}
-                                >
-                                    <CometCard>
-                                        <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-between hover:border-primary/30 transition-colors">
-                                            <div className="flex flex-col h-full justify-between">
-                                                <div>
-                                                    <h3 className="text-foreground font-mono text-sm font-bold break-all line-clamp-3">
-                                                        {mostrarBinario ? item.binario : item.value}
-                                                    </h3>
+                            {resultados ? (
+                                <>
+                                    {/* Cards con datos reales */}
+                                    <div ref={(el) => cardsRef.current.push(el)}>
+                                        <CometCard>
+                                            <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                                                <div className="flex flex-col h-full justify-between">
+                                                    <div>
+                                                        <h3 className="text-foreground font-mono text-sm font-bold break-all line-clamp-3">
+                                                            {mostrarBinario ? resultados.address_binary : resultados.address}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-foreground/60 font-mono text-xs border-t border-primary/20 pt-2 mt-2">
+                                                        Address
+                                                    </p>
                                                 </div>
-                                                {/* Texto de IP en la parte inferior */}
-                                                <p className="text-foreground/60 font-mono text-xs border-t border-primary/20 pt-2 mt-2">
-                                                    {item.label}
-                                                </p>
                                             </div>
-                                        </div>
-                                    </CometCard>
-                                </div>
-                            ))}
-
-                            {/* Novena Card - Toggle Binario */}
-                            <div
-                                ref={(el) => cardsRef.current.push(el)}
-                            >
-                                <CometCard>
-                                    <div
-                                        onClick={() => setMostrarBinario(!mostrarBinario)}
-                                        className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-center items-center hover:border-primary/30 cursor-pointer hover:bg-background/40"
-                                        style={{
-                                            transformStyle: 'preserve-3d',
-                                            transform: mostrarBinario ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                                            transition: 'transform 0.6s ease-in-out',
-                                            position: 'relative',
-                                        }}
-                                    >
-                                        {/* Lado frontal - Ver Binario */}
-                                        <h3
-                                            className={mostrarBinario ? 'hidden' : 'text-foreground font-semibold text-sm text-center'}
-                                        >
-                                            Ver Binario
-                                        </h3>
-
-                                        {/* Lado trasero - Ver Decimal */}
-                                        <h3
-                                            className={mostrarBinario ? 'text-foreground font-semibold text-sm text-center absolute inset-0 flex items-center justify-center' : 'hidden'}
-                                            style={{
-                                                transform: 'rotateY(180deg)',
-                                            }}
-                                        >
-                                            Ver Decimal
-                                        </h3>
+                                        </CometCard>
                                     </div>
-                                </CometCard>
-                            </div>
+
+                                    <div ref={(el) => cardsRef.current.push(el)}>
+                                        <CometCard>
+                                            <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                                                <div className="flex flex-col h-full justify-between">
+                                                    <div>
+                                                        <h3 className="text-foreground font-mono text-sm font-bold break-all line-clamp-3">
+                                                            {mostrarBinario ? resultados.netmask_binary : resultados.netmask}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-foreground/60 font-mono text-xs border-t border-primary/20 pt-2 mt-2">
+                                                        Netmask
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CometCard>
+                                    </div>
+
+                                    <div ref={(el) => cardsRef.current.push(el)}>
+                                        <CometCard>
+                                            <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                                                <div className="flex flex-col h-full justify-between">
+                                                    <div>
+                                                        <h3 className="text-foreground font-mono text-sm font-bold break-all line-clamp-3">
+                                                            {mostrarBinario ? resultados.wildcard_binary : resultados.wildcard}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-foreground/60 font-mono text-xs border-t border-primary/20 pt-2 mt-2">
+                                                        Wildcard
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CometCard>
+                                    </div>
+
+                                    <div ref={(el) => cardsRef.current.push(el)}>
+                                        <CometCard>
+                                            <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                                                <div className="flex flex-col h-full justify-between">
+                                                    <div>
+                                                        <h3 className="text-foreground font-mono text-sm font-bold break-all line-clamp-3">
+                                                            {mostrarBinario ? resultados.network_binary : resultados.network}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-foreground/60 font-mono text-xs border-t border-primary/20 pt-2 mt-2">
+                                                        Network
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CometCard>
+                                    </div>
+
+                                    <div ref={(el) => cardsRef.current.push(el)}>
+                                        <CometCard>
+                                            <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                                                <div className="flex flex-col h-full justify-between">
+                                                    <div>
+                                                        <h3 className="text-foreground font-mono text-sm font-bold break-all line-clamp-3">
+                                                            {mostrarBinario ? resultados.hostmin_binary : resultados.hostmin}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-foreground/60 font-mono text-xs border-t border-primary/20 pt-2 mt-2">
+                                                        HostMin
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CometCard>
+                                    </div>
+
+                                    <div ref={(el) => cardsRef.current.push(el)}>
+                                        <CometCard>
+                                            <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                                                <div className="flex flex-col h-full justify-between">
+                                                    <div>
+                                                        <h3 className="text-foreground font-mono text-sm font-bold break-all line-clamp-3">
+                                                            {mostrarBinario ? resultados.hostmax_binary : resultados.hostmax}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-foreground/60 font-mono text-xs border-t border-primary/20 pt-2 mt-2">
+                                                        HostMax
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CometCard>
+                                    </div>
+
+                                    <div ref={(el) => cardsRef.current.push(el)}>
+                                        <CometCard>
+                                            <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                                                <div className="flex flex-col h-full justify-between">
+                                                    <div>
+                                                        <h3 className="text-foreground font-mono text-sm font-bold break-all line-clamp-3">
+                                                            {mostrarBinario ? resultados.broadcast_binary : resultados.broadcast}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-foreground/60 font-mono text-xs border-t border-primary/20 pt-2 mt-2">
+                                                        Broadcast
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CometCard>
+                                    </div>
+
+                                    <div ref={(el) => cardsRef.current.push(el)}>
+                                        <CometCard>
+                                            <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                                                <div className="flex flex-col h-full justify-between">
+                                                    <div>
+                                                        <h3 className="text-foreground font-mono text-sm font-bold break-all line-clamp-3">
+                                                            {resultados.hosts_net}
+                                                        </h3>
+                                                        <h2 className="text-foreground font-mono text-sm break-all line-clamp-3">
+                                                            {resultados.clase}
+                                                            <br />
+                                                            {resultados.tipo}
+                                                        </h2>
+                                                    </div>
+                                                    <p className="text-foreground/60 font-mono text-xs border-t border-primary/20 pt-2 mt-2">
+                                                        Hosts/Net
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </CometCard>
+                                    </div>
+
+                                    {/* Novena Card - Toggle Binario */}
+                                    <div ref={(el) => cardsRef.current.push(el)}>
+                                        <CometCard>
+                                            <div
+                                                onClick={() => setMostrarBinario(!mostrarBinario)}
+                                                className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-center items-center hover:border-primary/30 cursor-pointer hover:bg-background/40"
+                                                style={{
+                                                    transformStyle: 'preserve-3d',
+                                                    transform: mostrarBinario ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                                                    transition: 'transform 0.6s ease-in-out',
+                                                    position: 'relative',
+                                                }}
+                                            >
+                                                <h3 className={mostrarBinario ? 'hidden' : 'text-foreground font-semibold text-sm text-center'}>
+                                                    Ver Binario
+                                                </h3>
+                                                <h3 className={mostrarBinario ? 'text-foreground font-semibold text-sm text-center absolute inset-0 flex items-center justify-center' : 'hidden'}
+                                                    style={{ transform: 'rotateY(180deg)' }}>
+                                                    Ver Decimal
+                                                </h3>
+                                            </div>
+                                        </CometCard>
+                                    </div>
+                                </>
+                            ) : (
+                                // Mostrar placeholder cuando no hay resultados
+                                <>
+                                    {[...Array(9)].map((_, index) => (
+                                        <div key={index} ref={(el) => cardsRef.current.push(el)}>
+                                            <CometCard>
+                                                <div className="backdrop-blur-md bg-background/30 border border-primary/10 rounded-xl p-6 w-48 h-40 flex flex-col justify-center items-center hover:border-primary/30 transition-colors">
+                                                    <p className="text-muted-foreground/50 text-sm text-center italic">
+                                                        Ingresa una IP y máscara
+                                                    </p>
+                                                </div>
+                                            </CometCard>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
