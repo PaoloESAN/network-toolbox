@@ -69,20 +69,8 @@ def ipv6_a_ipv4(ipv6):
 
 
 if __name__ == "__main__":
-    
-    if len(sys.argv) != 3:
-        print("Error: Uso: python convertir-ips.py <ip> <direction>")
-        sys.exit(1)
-    
-    ip = sys.argv[1]
-    direction = sys.argv[2]
-    
-    if direction == "ipv4_to_ipv6":
-        resultado = ipv4_a_ipv6(ip)
-    elif direction == "ipv6_to_ipv4":
-        resultado = ipv6_a_ipv4(ip)
-    else:
-        print("Error: direction debe ser 'ipv4_to_ipv6' o 'ipv6_to_ipv4'")
-        sys.exit(1)
-    
-    print(resultado)
+    print(ipv4_a_ipv6("192.168.1.1"))  # Salida: ::ffff:c0a8:0101
+    print(ipv6_a_ipv4("::ffff:c0a8:0101"))
+
+    print(ipv4_a_ipv6("10.0.0.1"))  # Salida: ::ffff:0a00:0001
+    print(ipv6_a_ipv4("::ffff:0a00:0001"))

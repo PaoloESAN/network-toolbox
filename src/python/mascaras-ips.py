@@ -199,52 +199,8 @@ def imprimir_subred(ip, netmask):
 
 
 if __name__ == "__main__":
-    # Recibir argumentos: python mascaras-ips.py <ip> <netmask>
-    # Ejemplo: python mascaras-ips.py 192.168.0.1 24
+
+    imprimir_subred("192.168.0.1", 24)
+    imprimir_subred("10.0.0.1", 8)
+    imprimir_subred("172.16.0.1", 16)
     
-    if len(sys.argv) < 3:
-        print(json.dumps({"error": "Uso: python mascaras-ips.py <ip> <netmask>"}))
-        sys.exit(1)
-    
-    ip = sys.argv[1]
-    netmask = int(sys.argv[2])
-    
-    # Validar que la IP tenga 4 octetos
-    octetos = ip.split('.')
-    if len(octetos) != 4:
-        print(json.dumps({"error": "La IP debe tener 4 números (ej: 192.168.0.1)"}))
-        sys.exit(1)
-    
-    # Validar que la máscara esté entre 0 y 32
-    if netmask < 0 or netmask > 32:
-        print(json.dumps({"error": "La máscara debe estar entre 0 y 32"}))
-        sys.exit(1)
-    
-    info = calcular_subred(ip, netmask)
-    
-    if info is None:
-        print(json.dumps({"error": "IP inválida"}))
-        sys.exit(1)
-    
-    # Convertir el resultado a un formato más simple para el frontend
-    resultado = {
-        "address": info['Address']['decimal'],
-        "address_binary": info['Address']['binario'],
-        "netmask": info['Netmask']['decimal'],
-        "netmask_binary": info['Netmask']['binario'],
-        "wildcard": info['Wildcard']['decimal'],
-        "wildcard_binary": info['Wildcard']['binario'],
-        "network": info['Network']['decimal'],
-        "network_binary": info['Network']['binario'],
-        "hostmin": info['HostMin']['decimal'],
-        "hostmin_binary": info['HostMin']['binario'],
-        "hostmax": info['HostMax']['decimal'],
-        "hostmax_binary": info['HostMax']['binario'],
-        "broadcast": info['Broadcast']['decimal'],
-        "broadcast_binary": info['Broadcast']['binario'],
-        "hosts_net": info['Hosts/Net'],
-        "clase": info['Clase'],
-        "tipo": info['Tipo']
-    }
-    
-    print(json.dumps(resultado))

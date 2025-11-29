@@ -14,7 +14,6 @@ Convierte direcciones IPv4 a su equivalente en IPv6, incluyendo diferentes forma
 - **Frontend**: [Next.js](https://nextjs.org/) - React Framework moderno
 - **Lenguaje**: JavaScript/JSX
 - **UI Components**: Shadcn, react bits
-- **Tema**: Soporte para modo claro y oscuro
 
 ## Iniciando
 
