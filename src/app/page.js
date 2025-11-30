@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState } from "react"
-import { ModeToggle } from "@/components/theme-toogle"
 import IPv4IPv6Converter from "@/components/IPv4IPv6Converter"
 import Logos3D from "@/components/logos3D"
 import DockNav from "@/components/DockNav"
@@ -52,11 +51,6 @@ export default function Home() {
 
       {/* Dock Navigation */}
       <DockNav />
-
-      {/* Botón de tema */}
-      <div className="fixed top-6 right-6 z-50">
-        <ModeToggle />
-      </div>
 
       {/* Contenedor principal */}
       <div ref={containerRef} className="relative z-10 w-full h-screen overflow-hidden flex flex-col">
