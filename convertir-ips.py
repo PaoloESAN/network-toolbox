@@ -14,22 +14,19 @@ def ipv4_a_ipv6(ipv4):
     except ValueError:
         return "Error: Los valores deben ser números"
     
-    grupo1 = f"{octetos[0]:02x}{octetos[1]:02x}" #02x es para formato hexadecimal con dos dígitos
-    grupo2 = f"{octetos[2]:02x}{octetos[3]:02x}" #02x es para formato hexadecimal con dos dígitos
+    grupo1 = f"{octetos[0]:02x}{octetos[1]:02x}" 
+    grupo2 = f"{octetos[2]:02x}{octetos[3]:02x}" 
 
     return f"::ffff:{grupo1}:{grupo2}"
 
 
 def ipv6_a_ipv4(ipv6):
-    """Convierte IPv6 a IPv4 - Ejemplo: ::ffff:c0a8:0101 -> 192.168.1.1"""
-    # Expandir la notación comprimida (::)
     if '::' in ipv6:
-        # Dividir en dos partes usando ::
+
         partes = ipv6.split('::')
         parte_izquierda = partes[0]
         parte_derecha = partes[1]
         
-        # Convertir strings en listas de grupos
         if parte_izquierda:
             grupos_izq = parte_izquierda.split(':')
         else:
@@ -40,28 +37,24 @@ def ipv6_a_ipv4(ipv6):
         else:
             grupos_der = []
         
-        # Rellenar con ceros en el medio
         ceros_faltantes = 8 - len(grupos_izq) - len(grupos_der)
         grupos = grupos_izq + ['0'] * ceros_faltantes + grupos_der
     else:
-        # Si no hay ::, dividir normalmente
         grupos = ipv6.split(':')
     
-    # Validar que tenga 8 grupos
     if len(grupos) != 8:
         return "Error: IPv6 inválido"
     
     try:
-        # Tomar los dos últimos grupos (contienen el IPv4 en hexadecimal)
-        hex_grupo_6 = grupos[6]  # Ejemplo: "c0a8"
-        hex_grupo_7 = grupos[7]  # Ejemplo: "0101"
+
+        hex_grupo_6 = grupos[6]  
+        hex_grupo_7 = grupos[7] 
         
-        # Convertir hexadecimal a decimal
-        # Cada grupo tiene 4 dígitos hex = 2 octetos
-        octeto1 = int(hex_grupo_6[:2], 16)    # c0 = 192
-        octeto2 = int(hex_grupo_6[2:], 16)    # a8 = 168
-        octeto3 = int(hex_grupo_7[:2], 16)    # 01 = 1
-        octeto4 = int(hex_grupo_7[2:], 16)    # 01 = 1
+    
+        octeto1 = int(hex_grupo_6[:2], 16)    
+        octeto2 = int(hex_grupo_6[2:], 16)    
+        octeto3 = int(hex_grupo_7[:2], 16)    
+        octeto4 = int(hex_grupo_7[2:], 16)    
         
         return f"{octeto1}.{octeto2}.{octeto3}.{octeto4}"
     except (ValueError, IndexError):

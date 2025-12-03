@@ -2,8 +2,8 @@ import { spawn } from 'child_process';
 import path from 'path';
 
 export async function POST(request) {
-    const { ip, mascara } = await request.json();
-    console.log('Received mask calculation request:', ip, mascara);
+    const { ip, mascara, subredes } = await request.json();
+    console.log('Received mask calculation request:', ip, mascara, subredes);
 
     try {
         const scriptPath = path.join(process.cwd(), 'mascaras-ips.py');
@@ -13,7 +13,11 @@ export async function POST(request) {
             let output = '';
             let errorOutput = '';
 
-            const python = spawn('python', [scriptPath, ip, mascara.toString()]);
+            const args = [scriptPath, ip, mascara.toString()];
+            if (subredes !== null && subredes !== undefined) {
+                args.push(subredes.toString());
+            }
+            const python = spawn('python', args);
 
             python.stdout.on('data', (data) => {
                 console.log('Python stdout:', data.toString());

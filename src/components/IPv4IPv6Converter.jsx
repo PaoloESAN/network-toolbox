@@ -103,6 +103,8 @@ export default function IPv4IPv6Converter({ cambiarIp }) {
         const newState = !isIPv4ToIPv6
         setIsIPv4ToIPv6(newState)
         cambiarIp(newState)
+        setOutput(input)
+        setInput(output)
         if (buttonRef.current) {
             const targetRotation = currentRotationRef.current + 360
             gsap.to(buttonRef.current, {
